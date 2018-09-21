@@ -42,6 +42,7 @@
 */
 
 #include "mcc_generated_files/mcc.h"
+#include "usb_relay_app.h"
 
 /*
                          Main application
@@ -70,10 +71,25 @@ void main(void)
 
     while (1)
     {
+        t_relay_data realy_data;
         MCC_USB_CDC_DemoTasks();
         // Add your application code
+//        volatile int i = atoi("ab");
+//        i = strlen("an");
+
+//        strcspn("R1S0P1023D123C343","RSPDC"); //strpbrk 
+                
+//        int i;
+//        char strtext[] = "129th";
+//        char cset[] = "1234567890";
+//
+//        i = strspn (strtext,cset);
+    //    printf ("The initial number has %d digits.\n",i);
+        RelayApp_ParseCommand("R1S0P1023D123C343", &realy_data);
     }
 }
+
+
 /**
  End of File
 */

@@ -45,6 +45,7 @@ void MCC_USB_CDC_DemoTasks(void)
     {
         return;
     }
+    
 
     if( USBUSARTIsTxTrfReady() == true)
     {
