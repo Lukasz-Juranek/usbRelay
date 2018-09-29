@@ -12,17 +12,38 @@
 extern "C" {
 #endif
 
-#define MAX_RELAY_NO 8
+#define USB_RELAY_MAX_RELAY_NO 8
+#define USB_RELAY_MAX_STEPS_COUNT 5
     
-typedef struct {
-    uint8_t relay_number;
-    uint8_t is_closed;
-    uint32_t operation_count;
-    uint32_t period_ms;
-    uint32_t delay_ms;
-}t_relay_data;
+#define USB_RELAY_OK 1
+#define USB_RELAY_ERR 0
+#define USB_RELAY_MAX_STEPS_ERR 2
 
-uint8_t RelayApp_ParseCommand(char* i_data, t_relay_data *realy_data);
+typedef struct {
+    uint8_t  active_status;
+    uint32_t period_ms;
+}t_step_conf;
+
+typedef struct {
+	uint8_t relay_number;
+
+	uint32_t cfg_cycle_count;
+    uint32_t cfg_delay_ms;
+
+    uint32_t cycle_count;
+    uint32_t delay_ms;
+
+    t_step_conf active_step_data;
+    uint8_t all_steps_count;
+    uint8_t active_step_number;
+    t_step_conf steps_array[USB_RELAY_MAX_STEPS_COUNT];
+} t_relay;
+
+void RelayApp_ISR();
+uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data);
+uint8_t RelayApp_ParseStep(char* i_data, t_step_conf *realy_data);
+void RelayApp_Start(t_relay* relays_configuration);
+void RelayApp_ProcessStep(t_relay* relay);
 
 #ifdef	__cplusplus
 }

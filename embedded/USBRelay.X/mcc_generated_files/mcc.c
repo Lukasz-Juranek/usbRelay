@@ -54,6 +54,7 @@ void SYSTEM_Initialize(void)
     OSCILLATOR_Initialize();
     WDT_Initialize();
     USBDeviceInit();
+    TMR1_Initialize();
     USBDeviceAttach();
 }
 

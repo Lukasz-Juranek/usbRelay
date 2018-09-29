@@ -44,9 +44,8 @@
 #include "mcc_generated_files/mcc.h"
 #include "usb_relay_app.h"
 
-/*
-                         Main application
- */
+t_relay_conf r_conf_array[MAX_RELAY_NO] = {0};
+
 extern void  MCC_USB_CDC_DemoTasks();
 
 void main(void)
@@ -54,38 +53,25 @@ void main(void)
     // initialize the device
     SYSTEM_Initialize();
 
-    // When using interrupts, you need to set the Global and Peripheral Interrupt Enable bits
-    // Use the following macros to:
-
-    // Enable the Global Interrupts
     INTERRUPT_GlobalInterruptEnable();
-
-    // Enable the Peripheral Interrupts
     INTERRUPT_PeripheralInterruptEnable();
 
-    // Disable the Global Interrupts
-    //INTERRUPT_GlobalInterruptDisable();
-
-    // Disable the Peripheral Interrupts
-    //INTERRUPT_PeripheralInterruptDisable();
-
+    RelayApp_Init(r_conf_array);
+    TMR1_SetInterruptHandler(RelayApp_ISR);
+    
     while (1)
     {
-        t_relay_data realy_data;
+        t_relay_conf realy_conf;
         MCC_USB_CDC_DemoTasks();
         // Add your application code
-//        volatile int i = atoi("ab");
-//        i = strlen("an");
-
-//        strcspn("R1S0P1023D123C343","RSPDC"); //strpbrk 
-                
-//        int i;
-//        char strtext[] = "129th";
-//        char cset[] = "1234567890";
-//
-//        i = strspn (strtext,cset);
-    //    printf ("The initial number has %d digits.\n",i);
-        RelayApp_ParseCommand("R1S0P1023D123C343", &realy_data);
+        if (RelayApp_ParseCommand("R1S0P1023D123C343", &realy_conf))
+        {
+            memcpy(&r_conf_array[realy_conf.relay_number], &realy_conf, sizeof(realy_conf));
+            /* send ok */
+        } else
+        {
+            /* send nok */
+        };
     }
 }
 
