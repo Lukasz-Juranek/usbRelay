@@ -39,11 +39,10 @@ typedef struct {
     t_step_conf steps_array[USB_RELAY_MAX_STEPS_COUNT];
 } t_relay;
 
-void RelayApp_ISR();
-uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data);
-uint8_t RelayApp_ParseStep(char* i_data, t_step_conf *realy_data);
-void RelayApp_Start(t_relay* relays_configuration);
-void RelayApp_ProcessStep(t_relay* relay);
+void RelayApp_ISR(void);
+t_relay* RelayApp_Start(void);
+uint8_t RelayApp_ActivateStep(t_relay* relay, uint8_t stepNo);
+uint8_t RelayApp_ParseWhole(char* i_data, t_relay* relay_array);
 
 #ifdef	__cplusplus
 }

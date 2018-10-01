@@ -5,7 +5,13 @@
 #include <stdlib.h>
 #include "usb_relay_app.h"
 
-/* commands in format: RrDdddCccc,Ss,Pppp,Ss,Pppp...
+/* private functions */
+uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data);
+uint8_t RelayApp_ParseStep(char* i_data, t_step_conf *realy_data);
+void RelayApp_ProcessStep(t_relay* relay);
+uint8_t RelayApp_ParseRelayNumber(char* i_data);
+
+/* commands in format: RrDdddCccc,SsPppp,SsPppp...
  where:
  r - relay number max 8
  ddd[optional] - delay in ms max 4294967295U if non then instant action
@@ -15,16 +21,34 @@
  pppp[optional] - cycle lenght/period in ms, how long relay state will last 4294967295U, if none then instant switch
  */
 
-uint8_t RelayApp_ParseWhole(char* i_data, t_relay* relay_data) {
+uint8_t RelayApp_ParseWhole(char* i_data, t_relay* relay_array) {
+	uint8_t relay_no;
+	uint8_t i;
+	t_relay* relay_data;
 	const char relay_params[] = ",";
 	char* param_pointer = strpbrk(i_data, relay_params);
+	/* check for , */
 	if (param_pointer == NULL) {
 		return USB_RELAY_ERR;
 	}
-	if (RelayApp_ParseRelayData(param_pointer, relay_data) == 0) {
+
+	/* 1. to upper */
+	for (i = 0; i < (strlen(i_data) - 1); ++i) {
+		i_data[i] = toupper(i_data[i]);
+	}
+
+	/* extract relay number */
+	relay_no = RelayApp_ParseRelayNumber(i_data);
+	if (relay_no >= USB_RELAY_MAX_RELAY_NO)
+		return USB_RELAY_ERR;
+	relay_data =  &(relay_array[relay_no]);
+
+	/* parse paramteres and save to array */
+	if (RelayApp_ParseRelayData(i_data, relay_data) == 0) {
 		return USB_RELAY_ERR;
 	}
-	param_pointer = strpbrk(param_pointer + 1, relay_params);
+
+//	param_pointer = strpbrk(param_pointer + 1, relay_params);
 	while (param_pointer != NULL) {
 		/* check for avaliable slots */
 		if (relay_data->all_steps_count >= USB_RELAY_MAX_STEPS_COUNT)
@@ -35,8 +59,26 @@ uint8_t RelayApp_ParseWhole(char* i_data, t_relay* relay_data) {
 
 		param_pointer = strpbrk(param_pointer + 1, relay_params);
 	}
-	return 1;
+	return USB_RELAY_OK;
 }
+
+uint8_t RelayApp_ParseRelayNumber(char* i_data) {
+	const char relay_params[] = "RDC";
+	char* param_pointer;
+	param_pointer = strpbrk(i_data, relay_params);
+
+	while (param_pointer != NULL) {
+		char *pNumberEnd;
+		uint32_t tmp_val = strtol((char*) (param_pointer + 1), &pNumberEnd, 10);
+		if (param_pointer[0] == 'R')
+		{
+			return tmp_val;
+		}
+		param_pointer = strpbrk(param_pointer + 1, relay_params);
+	}
+	return USB_RELAY_MAX_RELAY_NO;
+}
+
 
 uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data) {
 	const char relay_params[] = "RDC";
@@ -50,45 +92,46 @@ uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data) {
 		uint32_t tmp_val = strtol((char*) (param_pointer + 1), &pNumberEnd, 10);
 		/* 2b. parameter check */
 		switch (param_pointer[0]) {
-		case 'R': {
-			if ((pNumberEnd == NULL) || ((tmp_val >= USB_RELAY_MAX_RELAY_NO))) {
-				return USB_RELAY_ERR;
-			} else {
-				realy_data->relay_number = tmp_val;
+			case 'R': {
+				if ((pNumberEnd == NULL) || ((tmp_val >= USB_RELAY_MAX_RELAY_NO))) {
+					return USB_RELAY_ERR;
+				} else {
+					realy_data->relay_number = tmp_val;
+				}
+				break;
 			}
-			break;
-		}
-		case 'D': {
-			if (pNumberEnd == NULL) {
-				realy_data->delay_ms = 0;
-				/* do nothing */
-			} else {
-				realy_data->delay_ms = tmp_val;
+			case 'D': {
+				if (pNumberEnd == NULL) {
+					realy_data->delay_ms = 0;
+					realy_data->cfg_delay_ms = 0;
+					/* do nothing */
+				} else {
+					realy_data->delay_ms = tmp_val;
+					realy_data->cfg_delay_ms = tmp_val;
+				}
+				break;
 			}
-			break;
-		}
-		case 'C': {
-			if (pNumberEnd == NULL) {
-				realy_data->cycle_count = UINT32_MAX;
-			} else {
-				realy_data->cycle_count = tmp_val;
+			case 'C': {
+				if (pNumberEnd == NULL) {
+					realy_data->cycle_count = UINT32_MAX;
+					realy_data->cfg_cycle_count = UINT32_MAX;
+				} else {
+					realy_data->cycle_count = tmp_val;
+					realy_data->cfg_cycle_count = tmp_val;
+				}
+				break;
 			}
-			break;
 		}
-		}
+		param_pointer = strpbrk(param_pointer + 1, relay_params);
 	}
 	return USB_RELAY_OK;
 }
 
 uint8_t RelayApp_ParseStep(char* i_data, t_step_conf* realy_data) {
 
-	const char relay_params[] = "SP";
+	const char relay_params[] = "SP,";
 	uint8_t i;
 	char* param_pointer;
-	/* 1. to upper */
-	for (i = 0; i < (strlen(i_data) - 1); ++i) {
-		i_data[i] = toupper(i_data[i]);
-	}
 	/* 2. Cycle by all params */
 	param_pointer = strpbrk(i_data, relay_params);
 	while (param_pointer != NULL) {
@@ -103,6 +146,7 @@ uint8_t RelayApp_ParseStep(char* i_data, t_step_conf* realy_data) {
 			} else {
 				realy_data->active_status = tmp_val;
 			}
+			i |= 0x01;
 			break;
 		}
 		case 'P': {
@@ -111,17 +155,26 @@ uint8_t RelayApp_ParseStep(char* i_data, t_step_conf* realy_data) {
 			} else {
 				realy_data->period_ms = tmp_val;
 			}
+			i |= 0x02;
 			break;
+		}
+		case ',': {
+			if ((i & 0x01) == 0x01)
+				return USB_RELAY_OK;
+			return USB_RELAY_ERR;
 		}
 		default:
 			break;
 		}
 		param_pointer = strpbrk(param_pointer + 1, relay_params);
 	}
-	return USB_RELAY_OK;
+
+	if ((i & 0x01) == 0x01)
+		return USB_RELAY_OK;
+	return USB_RELAY_ERR;
 }
 
-uint8_t RelayApp_SetStep(t_relay* relay, uint8_t stepNo) {
+uint8_t RelayApp_ActivateStep(t_relay* relay, uint8_t stepNo) {
 
 	if (stepNo < relay->all_steps_count) {
 		relay->active_step_number = stepNo;
@@ -137,9 +190,11 @@ void RelayApp_SetRelayState(t_relay* active_relay) {
 
 }
 
-t_relay* relays;
-void RelayApp_Start(t_relay* relays_configuration) {
+t_relay relays[USB_RELAY_MAX_RELAY_NO];
 
+t_relay* RelayApp_Start(void)
+{
+	return relays;
 }
 
 void RelayApp_ProcessStep(t_relay* relay) {
@@ -154,10 +209,10 @@ void RelayApp_ProcessStep(t_relay* relay) {
 				relay->active_step_data.period_ms--;
 			} else {
 				RelayApp_SetRelayState(relay);
-				if (RelayApp_SetStep(relay,
+				if (RelayApp_ActivateStep(relay,
 						relay->active_step_number
 								+ 1) == USB_RELAY_MAX_STEPS_ERR) {
-					RelayApp_SetStep(relay, 0);
+					RelayApp_ActivateStep(relay, 0);
 					/* 2. Process operation count*/
 					if (relay->cycle_count != UINT32_MAX) {
 						relay->cycle_count--;
