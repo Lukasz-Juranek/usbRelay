@@ -15,16 +15,17 @@ limitations under the License.
 
 To request to license the code under the MLA license (www.microchip.com/mla_license), 
 please contact mla_licensing@microchip.com
-*******************************************************************************/
+ *******************************************************************************/
 
 #ifndef FIXED_MEMORY_ADDRESS_H
 #define FIXED_MEMORY_ADDRESS_H
 
 #define FIXED_ADDRESS_MEMORY
 
-#define IN_DATA_BUFFER_ADDRESS_TAG      __at(0x2080)
-#define OUT_DATA_BUFFER_ADDRESS_TAG     __at(0x20C0)
-#define CONTROL_BUFFER_ADDRESS_TAG      __at(0x2100)
-#define DRIVER_DATA_ADDRESS_TAG         __at(0x2108)
+#define IN_DATA_BUFFER_ADDRESS_TAG __at(0x20A0)
+#define OUT_DATA_BUFFER_ADDRESS_TAG __at(0x2100)
+#define CONTROL_BUFFER_ADDRESS_TAG 
+#define DRIVER_DATA_ADDRESS_TAG 
+
 
 #endif //FIXED_MEMORY_ADDRESS

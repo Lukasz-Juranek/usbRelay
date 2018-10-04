@@ -86,8 +86,8 @@ void TMR1_Initialize(void)
     // Set Default Interrupt Handler
     TMR1_SetInterruptHandler(TMR1_DefaultInterruptHandler);
 
-    // T1CKPS 1:1; T1OSCEN disabled; nT1SYNC synchronize; TMR1CS FOSC/4; TMR1ON enabled; 
-    T1CON = 0x01;
+    // T1CKPS 1:1; T1OSCEN disabled; nT1SYNC synchronize; TMR1CS FOSC/4; TMR1ON disabled; 
+    T1CON = 0x00;
 }
 
 void TMR1_StartTimer(void)

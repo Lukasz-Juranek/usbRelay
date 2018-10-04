@@ -16,7 +16,7 @@
         Product Revision  :  PIC10 / PIC12 / PIC16 / PIC18 MCUs - 1.65.2
         Device            :  PIC16F1455
         Driver Version    :  2.00
-*/
+ */
 
 /*
     (c) 2018 Microchip Technology Inc. and its subsidiaries. 
@@ -39,43 +39,64 @@
     CLAIMS IN ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT 
     OF FEES, IF ANY, THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS 
     SOFTWARE.
-*/
+ */
 
 #include "mcc_generated_files/mcc.h"
 #include "usb_relay_app.h"
 
-t_relay_conf r_conf_array[MAX_RELAY_NO] = {0};
+//t_relay_conf r_conf_array[MAX_RELAY_NO] = {0};
 
-extern void  MCC_USB_CDC_DemoTasks();
+static uint8_t buffer[64];
+uint8_t numBytes;
 
-void main(void)
-{
+void main(void) {
     // initialize the device
     SYSTEM_Initialize();
 
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
-    RelayApp_Init(r_conf_array);
-    TMR1_SetInterruptHandler(RelayApp_ISR);
-    
-    while (1)
-    {
-        t_relay_conf realy_conf;
-        MCC_USB_CDC_DemoTasks();
+    //RelayApp_Init(r_conf_array);
+    //TMR1_SetInterruptHandler(RelayApp_ISR);
+
+    while (1) {
+        //  t_relay_conf realy_conf;
+        // MCC_USB_CDC_DemoTasks();
         // Add your application code
-        if (RelayApp_ParseCommand("R1S0P1023D123C343", &realy_conf))
-        {
-            memcpy(&r_conf_array[realy_conf.relay_number], &realy_conf, sizeof(realy_conf));
-            /* send ok */
-        } else
-        {
-            /* send nok */
-        };
+        // if (RelayApp_ParseCommand("R1S0P1023D123C343", &realy_conf))
+        //        {
+        //            memcpy(&r_conf_array[realy_conf.relay_number], &realy_conf, sizeof(realy_conf));
+        //            /* send ok */
+        //        } else
+        //        {
+        //            /* send nok */
+        //        };
+
+
+        //        USBDeviceTasks();
+        if ((USBGetDeviceState() < CONFIGURED_STATE) || (USBIsDeviceSuspended() == true)) {            
+            continue; //go back to the top of the while loop
+        } else {
+            //Keep trying to send data to the PC as required
+            CDCTxService();
+            //Run application code.
+            {
+                numBytes = getsUSBUSART(buffer, sizeof (buffer)); //until the buffer is free.
+                
+                while(!USBUSARTIsTxTrfReady())
+                {
+                   CDCTxService();   
+                }
+                
+                if (numBytes > 0) {
+                    putUSBUSART(buffer,numBytes);
+                }
+            }
+        }
     }
 }
 
 
-/**
- End of File
-*/
+    /**
+     End of File
+     */

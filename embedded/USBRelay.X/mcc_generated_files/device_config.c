@@ -66,4 +66,4 @@
 #pragma config STVREN = ON    // Stack Overflow/Underflow Reset Enable->Stack Overflow or Underflow will cause a Reset
 #pragma config BORV = LO    // Brown-out Reset Voltage Selection->Brown-out Reset Voltage (Vbor), low trip point selected.
 #pragma config LPBOR = OFF    // Low-Power Brown Out Reset->Low-Power BOR is disabled
-#pragma config LVP = OFF    // Low-Voltage Programming Enable->High-voltage on MCLR/VPP must be used for programming
+#pragma config LVP = ON    // Low-Voltage Programming Enable->Low-voltage programming enabled

@@ -212,7 +212,7 @@ void RelayApp_ProcessStep(t_relay* relay) {
 				if (RelayApp_ActivateStep(relay,
 						relay->active_step_number
 								+ 1) == USB_RELAY_MAX_STEPS_ERR) {
-					RelayApp_ActivateStep(relay, 0);
+					RelayApp_ActivateStep(relay, !relay->active_step_number);
 					/* 2. Process operation count*/
 					if (relay->cycle_count != UINT32_MAX) {
 						relay->cycle_count--;
