@@ -84,6 +84,13 @@ uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data) {
 	const char relay_params[] = "RDC";
 	char* param_pointer;
 
+	realy_data->cycle_count = UINT32_MAX;
+	realy_data->cfg_cycle_count = UINT32_MAX;
+
+	realy_data->delay_ms = 0;
+	realy_data->cfg_delay_ms = 0;
+
+
 	/* 2. Cycle by all params */
 	param_pointer = strpbrk(i_data, relay_params);
 	while (param_pointer != NULL) {
@@ -102,8 +109,6 @@ uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data) {
 			}
 			case 'D': {
 				if (pNumberEnd == NULL) {
-					realy_data->delay_ms = 0;
-					realy_data->cfg_delay_ms = 0;
 					/* do nothing */
 				} else {
 					realy_data->delay_ms = tmp_val;
@@ -113,8 +118,7 @@ uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data) {
 			}
 			case 'C': {
 				if (pNumberEnd == NULL) {
-					realy_data->cycle_count = UINT32_MAX;
-					realy_data->cfg_cycle_count = UINT32_MAX;
+					/* do nothing */
 				} else {
 					realy_data->cycle_count = tmp_val;
 					realy_data->cfg_cycle_count = tmp_val;
@@ -186,14 +190,19 @@ uint8_t RelayApp_ActivateStep(t_relay* relay, uint8_t stepNo) {
 	return USB_RELAY_MAX_STEPS_ERR;
 }
 
-void RelayApp_SetRelayState(t_relay* active_relay) {
+//uint8_t RelayApp_ActivateStepToNext(t_relay* relay) {
+//	return RelayApp_ActivateStep(relay, (relay->active_step_number + 1) % relay->all_steps_count);
+//}
 
+void RelayApp_SetRelayState(t_relay* active_relay) {
+	RelayApp_UpdateIO(active_relay->relay_number, active_relay->active_step_data.active_status);
 }
 
 t_relay relays[USB_RELAY_MAX_RELAY_NO];
 
 t_relay* RelayApp_Start(void)
 {
+	memset(relays,0,sizeof(t_relay)*USB_RELAY_MAX_RELAY_NO);
 	return relays;
 }
 
@@ -209,10 +218,9 @@ void RelayApp_ProcessStep(t_relay* relay) {
 				relay->active_step_data.period_ms--;
 			} else {
 				RelayApp_SetRelayState(relay);
-				if (RelayApp_ActivateStep(relay,
-						relay->active_step_number
-								+ 1) == USB_RELAY_MAX_STEPS_ERR) {
-					RelayApp_ActivateStep(relay, !relay->active_step_number);
+				if (RelayApp_ActivateStep(relay,relay->active_step_number + 1) == USB_RELAY_MAX_STEPS_ERR)
+				{
+					RelayApp_ActivateStep(relay, 0);
 					/* 2. Process operation count*/
 					if (relay->cycle_count != UINT32_MAX) {
 						relay->cycle_count--;

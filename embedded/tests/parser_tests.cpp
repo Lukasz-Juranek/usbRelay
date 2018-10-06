@@ -11,6 +11,14 @@ extern "C" {
 	extern void RelayApp_ProcessStep(t_relay* relay);
 }
 
+int last_update_relay_no = -1;
+int last_update_io_state = -1;
+
+void RelayApp_UpdateIO(uint8_t relay_number,uint8_t io_state){
+	last_update_relay_no = relay_number;
+	last_update_io_state = io_state;
+}
+
 TEST_CASE( "Valid Step data is parsed corectly") {
 	t_step_conf relay_data;
     REQUIRE( RelayApp_ParseStep("S0P1023", &relay_data) == USB_RELAY_OK);
@@ -46,6 +54,18 @@ TEST_CASE( "Valid Commands are parsed coreclty") {
     REQUIRE( relays[1].cycle_count == 456);
 }
 
+TEST_CASE( "Cycles, and delay are not mandatory, by default infinite cycles, no delay") {
+	t_relay* relays = RelayApp_Start();
+    REQUIRE(RelayApp_ParseWhole("R0,S1P123,S0P333",relays) == USB_RELAY_OK);
+
+    REQUIRE( relays[0].cfg_delay_ms == 0);
+    REQUIRE( relays[0].cfg_cycle_count == UINT32_MAX);
+
+    REQUIRE( relays[0].delay_ms == 0);
+    REQUIRE( relays[0].cycle_count == UINT32_MAX);
+}
+
+
 TEST_CASE( "Steps activation is working") {
 	t_relay* relays = RelayApp_Start();
 	RelayApp_ParseWhole("R2D123C456,S1P123,S0P333",relays);
@@ -60,9 +80,40 @@ TEST_CASE( "Steps activation is working") {
 }
 
 TEST_CASE( "Cycling through steps is working") {
+
+	last_update_relay_no = -1;
+	last_update_io_state = -1;
+
 	t_relay* relays = RelayApp_Start();
-	RelayApp_ParseWhole("R2D123C456,S1P123,S0P333",relays);
-	RelayApp_ActivateStep(&relays[2],0);
-	REQUIRE(0 == 1);
-	//#error no cyclicling steps implemented
+	RelayApp_ParseWhole("R2D1C3,S1P123,S0P333",relays);
+	REQUIRE(USB_RELAY_OK == RelayApp_ActivateStep(&relays[2],0));
+
+	for (int i = 0; i < 3; i++)
+	{
+		REQUIRE(relays[2].active_step_number == 0);
+		RelayApp_ProcessStep(&relays[2]);
+		for (int i = 0; i < 123; i++)
+		{
+			RelayApp_ProcessStep(&relays[2]);
+		}
+		RelayApp_ProcessStep(&relays[2]);
+		REQUIRE(last_update_relay_no == 2);
+		REQUIRE(last_update_io_state == 1);
+		REQUIRE(relays[2].active_step_number == 1);
+		for (int i = 0; i < 333; i++)
+		{
+			RelayApp_ProcessStep(&relays[2]);
+		}
+		RelayApp_ProcessStep(&relays[2]);
+		REQUIRE(last_update_io_state == 0);
+		REQUIRE(relays[2].active_step_number == 0);
+	}
+
+	for (int i = 0; i < 500; i++)
+	{
+		RelayApp_ProcessStep(&relays[2]);
+	}
+	REQUIRE(relays[2].active_step_number == 0);
+	REQUIRE(last_update_relay_no == 2);
+	REQUIRE(last_update_io_state == 0);
 }

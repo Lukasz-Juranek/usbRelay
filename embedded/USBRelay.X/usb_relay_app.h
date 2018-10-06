@@ -44,6 +44,9 @@ t_relay* RelayApp_Start(void);
 uint8_t RelayApp_ActivateStep(t_relay* relay, uint8_t stepNo);
 uint8_t RelayApp_ParseWhole(char* i_data, t_relay* relay_array);
 
+/* User of this component must Implement This function */
+extern void RelayApp_UpdateIO(uint8_t relay_number,uint8_t io_state);
+
 #ifdef	__cplusplus
 }
 #endif
