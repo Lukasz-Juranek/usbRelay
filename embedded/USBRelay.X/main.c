@@ -44,10 +44,11 @@
 #include "mcc_generated_files/mcc.h"
 #include "usb_relay_app.h"
 
-//t_relay_conf r_conf_array[MAX_RELAY_NO] = {0};
+uint8_t buffer[64];
 
-static uint8_t buffer[64];
-uint8_t numBytes;
+uint8_t bufferPos;
+
+uint8_t LineReception(uint8_t *buffer, uint8_t* curentPosition, uint8_t maxSize);
 
 void main(void) {
     // initialize the device
@@ -56,47 +57,96 @@ void main(void) {
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
-    //RelayApp_Init(r_conf_array);
-    //TMR1_SetInterruptHandler(RelayApp_ISR);
-
+    t_relay* relays = RelayApp_Start();
+    TMR1_SetInterruptHandler(RelayApp_ISR);
+    bufferPos = 0;
+    
     while (1) {
-        //  t_relay_conf realy_conf;
-        // MCC_USB_CDC_DemoTasks();
-        // Add your application code
-        // if (RelayApp_ParseCommand("R1S0P1023D123C343", &realy_conf))
-        //        {
-        //            memcpy(&r_conf_array[realy_conf.relay_number], &realy_conf, sizeof(realy_conf));
-        //            /* send ok */
-        //        } else
-        //        {
-        //            /* send nok */
-        //        };
-
-
         //        USBDeviceTasks();
         if ((USBGetDeviceState() < CONFIGURED_STATE) || (USBIsDeviceSuspended() == true)) {            
             continue; //go back to the top of the while loop
         } else {
             //Keep trying to send data to the PC as required
+            //while(!USBUSARTIsTxTrfReady())
             CDCTxService();
             //Run application code.
-            {
-                numBytes = getsUSBUSART(buffer, sizeof (buffer)); //until the buffer is free.
-                
-                while(!USBUSARTIsTxTrfReady())
-                {
-                   CDCTxService();   
-                }
-                
-                if (numBytes > 0) {
-                    putUSBUSART(buffer,numBytes);
-                }
-            }
+            if (LineReception(buffer,&bufferPos,sizeof(buffer)))
+            {   
+              switch (RelayApp_ParseWhole(buffer,relays))
+              {
+                  case USB_RELAY_OK:
+                      putUSBUSART("OK",sizeof("OK"));
+                      break;
+                  case USB_RELAY_ERR:
+                      putUSBUSART("PARSE_ERR",sizeof("PARSE_ERR"));
+                      break;
+                  case USB_RELAY_MAX_STEPS_ERR:
+                      putUSBUSART("MAX_STEPS_ERR",sizeof("MAX_STEPS_ERR"));
+                      break;
+                  default:
+                      putUSBUSART("UNKNOWN",sizeof("UNKNOWN"));
+                      break;  
+              }
+            }    
         }
     }
 }
 
+uint8_t LineReception(uint8_t *buffer, uint8_t* curentPosition, uint8_t maxSize)
+{
+    uint8_t rxByte; 
+    while (getsUSBUSART(&rxByte, sizeof(rxByte)) == 1)
+    {
+        if (*curentPosition < maxSize)
+        {
+            buffer[*curentPosition] = rxByte;
+            if (buffer[*curentPosition] == '\n')
+            {
+                buffer[*curentPosition] = 0;
+                *curentPosition = 0;
+                return 1;
+            }
+            *curentPosition ++;
+        } else {
+            *curentPosition = 0;
+        }
+    }
+    return 0;
+}
 
-    /**
-     End of File
-     */
+void RelayApp_UpdateIO(uint8_t relay_number,uint8_t io_state)
+{
+    switch (relay_number)
+    {
+        case 0:
+            R0_SetDigitalOutput(io_state);
+            break;
+        case 1:
+            R1_SetDigitalOutput(io_state);
+            break;
+        case 2:
+            R2_SetDigitalOutput(io_state);
+            break;
+        case 3:
+            R3_SetDigitalOutput(io_state);
+            break;
+        case 4:
+            R4_SetDigitalOutput(io_state);
+            break;
+        case 5:
+            R5_SetDigitalOutput(io_state);
+            break;    
+        case 6:
+            R6_SetDigitalOutput(io_state);
+            break;
+        case 7:
+            R7_SetDigitalOutput(io_state);
+            break;
+        default:
+            break;
+    }
+}
+
+/**
+ End of File
+ */
