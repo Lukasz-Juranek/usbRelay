@@ -79,6 +79,20 @@ TEST_CASE( "Steps activation is working") {
 	relays[2].active_step_data.active_status = 0;
 }
 
+TEST_CASE( "Commands overwrite") {
+	t_relay* relays = RelayApp_Start();
+	REQUIRE(USB_RELAY_OK == RelayApp_ParseWhole("R0D1,S1P123,S0P333",relays));
+	REQUIRE(USB_RELAY_OK == RelayApp_ParseWhole("R0D2,S0P1,S1",relays));
+	REQUIRE(USB_RELAY_OK == RelayApp_ParseWhole("R0D3,S0P1,S1",relays));
+	REQUIRE(USB_RELAY_OK == RelayApp_ParseWhole("R0,S0P1,S1",relays));
+
+	REQUIRE(USB_RELAY_MAX_STEPS_ERR == RelayApp_ActivateStep(&relays[0],2));
+	REQUIRE(USB_RELAY_OK == RelayApp_ActivateStep(&relays[0],1));
+
+	REQUIRE(relays[0].active_step_data.active_status == 1);
+	REQUIRE(relays[0].active_step_data.period_ms == 0);
+}
+
 TEST_CASE( "Cycling through steps is working") {
 
 	last_update_relay_no = -1;

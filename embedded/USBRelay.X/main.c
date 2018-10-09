@@ -43,12 +43,13 @@
 
 #include "mcc_generated_files/mcc.h"
 #include "usb_relay_app.h"
+#include "nvm.h"
 
 uint8_t buffer[64];
 
 uint8_t bufferPos;
 
-uint8_t LineReception(uint8_t *buffer, uint8_t* curentPosition, uint8_t maxSize);
+uint8_t LineReception(uint8_t *buffer, uint8_t maxSize);
 
 void main(void) {
     // initialize the device
@@ -60,6 +61,9 @@ void main(void) {
     t_relay* relays = RelayApp_Start();
     TMR1_SetInterruptHandler(RelayApp_ISR);
     bufferPos = 0;
+    TMR1_StartTimer();
+    
+    nvm_read_conf(relays);
     
     while (1) {
         //        USBDeviceTasks();
@@ -67,11 +71,16 @@ void main(void) {
             continue; //go back to the top of the while loop
         } else {
             //Keep trying to send data to the PC as required
-            //while(!USBUSARTIsTxTrfReady())
-            CDCTxService();
+            
+            while(!USBUSARTIsTxTrfReady()) CDCTxService();
+            
             //Run application code.
-            if (LineReception(buffer,&bufferPos,sizeof(buffer)))
+            if (LineReception(buffer,sizeof(buffer)))
             {   
+              if (strcmp(buffer,"SaveConf") == 0)
+              {
+                  nvm_save_conf(relays);
+              }
               switch (RelayApp_ParseWhole(buffer,relays))
               {
                   case USB_RELAY_OK:
@@ -91,26 +100,40 @@ void main(void) {
         }
     }
 }
-
-uint8_t LineReception(uint8_t *buffer, uint8_t* curentPosition, uint8_t maxSize)
+//R2D123C456,S1P123,S0P333
+uint8_t LineReception(uint8_t *buffer, uint8_t maxSize)
 {
-    uint8_t rxByte; 
-    while (getsUSBUSART(&rxByte, sizeof(rxByte)) == 1)
+    uint8_t rxByte;
+    uint8_t cdc_rx_len;
+    extern USB_HANDLE CDCDataOutHandle;
+    extern volatile unsigned char cdc_data_rx[CDC_DATA_OUT_EP_SIZE];
+    
+    if(!USBHandleBusy(CDCDataOutHandle))
     {
-        if (*curentPosition < maxSize)
+        if(maxSize > USBHandleGetLength(CDCDataOutHandle))
         {
-            buffer[*curentPosition] = rxByte;
-            if (buffer[*curentPosition] == '\n')
-            {
-                buffer[*curentPosition] = 0;
-                *curentPosition = 0;
-                return 1;
-            }
-            *curentPosition ++;
-        } else {
-            *curentPosition = 0;
+            maxSize = USBHandleGetLength(CDCDataOutHandle);
         }
-    }
+        for(cdc_rx_len = 0; cdc_rx_len < maxSize; cdc_rx_len++)
+        {
+            rxByte = cdc_data_rx[cdc_rx_len];
+            if (bufferPos < maxSize)
+            {
+                buffer[bufferPos] = rxByte;
+                if (buffer[bufferPos] == '\r')
+                {
+                    buffer[bufferPos] = 0;
+                    bufferPos = 0;
+                    CDCDataOutHandle = USBRxOnePacket(CDC_DATA_EP,(uint8_t*)&cdc_data_rx,sizeof(cdc_data_rx));
+                    return 1;
+                }
+                bufferPos ++;
+            } else {
+                bufferPos = 0;
+            }
+       }
+    }       
+    CDCDataOutHandle = USBRxOnePacket(CDC_DATA_EP,(uint8_t*)&cdc_data_rx,sizeof(cdc_data_rx));
     return 0;
 }
 

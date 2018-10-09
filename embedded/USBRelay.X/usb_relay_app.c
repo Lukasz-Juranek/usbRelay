@@ -47,7 +47,7 @@ uint8_t RelayApp_ParseWhole(char* i_data, t_relay* relay_array) {
 	if (RelayApp_ParseRelayData(i_data, relay_data) == 0) {
 		return USB_RELAY_ERR;
 	}
-
+	relay_data->all_steps_count = 0;
 //	param_pointer = strpbrk(param_pointer + 1, relay_params);
 	while (param_pointer != NULL) {
 		/* check for avaliable slots */
@@ -136,6 +136,8 @@ uint8_t RelayApp_ParseStep(char* i_data, t_step_conf* realy_data) {
 	const char relay_params[] = "SP,";
 	uint8_t i;
 	char* param_pointer;
+	realy_data->active_status = 0;
+	realy_data->period_ms = 0;
 	/* 2. Cycle by all params */
 	param_pointer = strpbrk(i_data, relay_params);
 	while (param_pointer != NULL) {
