@@ -237,7 +237,7 @@ void RelayApp_ProcessStep(t_relay* relay) {
 
 /* function called in timer */
 void RelayApp_ISR() {
-	uint8_t i;
+    uint8_t i;
 	for (i = 0; i < USB_RELAY_MAX_RELAY_NO; i++) {
     	RelayApp_ProcessStep(&relays[i]);
 	}

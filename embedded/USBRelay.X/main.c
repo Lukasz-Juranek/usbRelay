@@ -45,125 +45,133 @@
 #include "usb_relay_app.h"
 #include "nvm.h"
 
-uint8_t buffer[64];
+#define BUFFER_SIZE 64
+uint8_t buffer[BUFFER_SIZE];
 
 uint8_t bufferPos;
 
 uint8_t LineReception(uint8_t *buffer, uint8_t maxSize);
+void FlushString(uint8_t *data);
+
+
 
 void main(void) {
     // initialize the device
     SYSTEM_Initialize();
-
-    INTERRUPT_GlobalInterruptEnable();
-    INTERRUPT_PeripheralInterruptEnable();
-
+  
     t_relay* relays = RelayApp_Start();
+    /*INTERRUPT_GlobalInterruptEnable();
+    INTERRUPT_PeripheralInterruptEnable();
+  
     TMR1_SetInterruptHandler(RelayApp_ISR);
     bufferPos = 0;
-    TMR1_StartTimer();
-    
+    TMR1_StartTimer();*/
+
+    nvm_read_conf(relays);
+    nvm_save_conf(relays);
     nvm_read_conf(relays);
     
+    while (1){
+        
+    }
+    
     while (1) {
-        //        USBDeviceTasks();
-        if ((USBGetDeviceState() < CONFIGURED_STATE) || (USBIsDeviceSuspended() == true)) {            
+        USBDeviceTasks();
+        if ((USBGetDeviceState() < CONFIGURED_STATE) || (USBIsDeviceSuspended() == true)) {
             continue; //go back to the top of the while loop
         } else {
             //Keep trying to send data to the PC as required
-            
-            while(!USBUSARTIsTxTrfReady()) CDCTxService();
-            
+           
+            //while(!USBUSARTIsTxTrfReady()) 
+            CDCTxService();            
             //Run application code.
-            if (LineReception(buffer,sizeof(buffer)))
-            {   
-              if (strcmp(buffer,"SaveConf") == 0)
-              {
-                  nvm_save_conf(relays);
-              }
-              switch (RelayApp_ParseWhole(buffer,relays))
-              {
-                  case USB_RELAY_OK:
-                      putUSBUSART("OK",sizeof("OK"));
-                      break;
-                  case USB_RELAY_ERR:
-                      putUSBUSART("PARSE_ERR",sizeof("PARSE_ERR"));
-                      break;
-                  case USB_RELAY_MAX_STEPS_ERR:
-                      putUSBUSART("MAX_STEPS_ERR",sizeof("MAX_STEPS_ERR"));
-                      break;
-                  default:
-                      putUSBUSART("UNKNOWN",sizeof("UNKNOWN"));
-                      break;  
-              }
-            }    
+            if (LineReception(buffer, BUFFER_SIZE)) {
+                if (strcmp(buffer, "SaveConf") == 0) {
+                    nvm_save_conf(relays);
+                    FlushString("OK\n");
+                }
+                switch (RelayApp_ParseWhole(buffer, relays)) {
+                    case USB_RELAY_OK:
+                        FlushString("OK\n");
+                        break;
+                    case USB_RELAY_ERR:
+                        FlushString("PARSE_ERR\n");
+                        break;
+                    case USB_RELAY_MAX_STEPS_ERR:
+                        FlushString("MAX_STEPS_ERR\n");
+                        break;
+                    default:
+                        FlushString("UNKNOWN\n");
+                        break;
+                }
+            }
         }
     }
 }
+
+void FlushString(uint8_t *data) {
+    do {
+        CDCTxService();
+    } while (!USBUSARTIsTxTrfReady());
+    putUSBUSART(data, strlen(data));
+    CDCTxService();
+}
 //R2D123C456,S1P123,S0P333
-uint8_t LineReception(uint8_t *buffer, uint8_t maxSize)
-{
+uint8_t LineReception(uint8_t *buffer, uint8_t maxSize) {
     uint8_t rxByte;
     uint8_t cdc_rx_len;
     extern USB_HANDLE CDCDataOutHandle;
     extern volatile unsigned char cdc_data_rx[CDC_DATA_OUT_EP_SIZE];
-    
-    if(!USBHandleBusy(CDCDataOutHandle))
-    {
-        if(maxSize > USBHandleGetLength(CDCDataOutHandle))
-        {
+    if (!USBHandleBusy(CDCDataOutHandle)) {
+        if (maxSize > USBHandleGetLength(CDCDataOutHandle)) {
             maxSize = USBHandleGetLength(CDCDataOutHandle);
         }
-        for(cdc_rx_len = 0; cdc_rx_len < maxSize; cdc_rx_len++)
-        {
+                
+        for (cdc_rx_len = 0; cdc_rx_len < maxSize; cdc_rx_len++) {
             rxByte = cdc_data_rx[cdc_rx_len];
-            if (bufferPos < maxSize)
-            {
+            if (bufferPos < maxSize) {
                 buffer[bufferPos] = rxByte;
-                if (buffer[bufferPos] == '\r')
-                {
+                if (buffer[bufferPos] == '\r') {
                     buffer[bufferPos] = 0;
                     bufferPos = 0;
-                    CDCDataOutHandle = USBRxOnePacket(CDC_DATA_EP,(uint8_t*)&cdc_data_rx,sizeof(cdc_data_rx));
+                    CDCDataOutHandle = USBRxOnePacket(CDC_DATA_EP, (uint8_t*) & cdc_data_rx, sizeof (cdc_data_rx));
                     return 1;
                 }
-                bufferPos ++;
+                bufferPos++;
             } else {
                 bufferPos = 0;
             }
-       }
-    }       
-    CDCDataOutHandle = USBRxOnePacket(CDC_DATA_EP,(uint8_t*)&cdc_data_rx,sizeof(cdc_data_rx));
+        }
+    }
+    //CDCDataOutHandle = USBRxOnePacket(CDC_DATA_EP, (uint8_t*) & cdc_data_rx, sizeof (cdc_data_rx));
     return 0;
 }
 
-void RelayApp_UpdateIO(uint8_t relay_number,uint8_t io_state)
-{
-    switch (relay_number)
-    {
+void RelayApp_UpdateIO(uint8_t relay_number, uint8_t io_state) {
+    switch (relay_number) {
         case 0:
-            R0_SetDigitalOutput(io_state);
+            R0_LAT = (io_state);
             break;
         case 1:
-            R1_SetDigitalOutput(io_state);
+            R1_LAT = (io_state);
             break;
         case 2:
-            R2_SetDigitalOutput(io_state);
+            R2_LAT = (io_state);
             break;
         case 3:
-            R3_SetDigitalOutput(io_state);
+            R3_LAT = (io_state);
             break;
         case 4:
-            R4_SetDigitalOutput(io_state);
+            R4_LAT = (io_state);
             break;
         case 5:
-            R5_SetDigitalOutput(io_state);
-            break;    
+            R5_LAT = (io_state);
+            break;
         case 6:
-            R6_SetDigitalOutput(io_state);
+            R6_LAT = (io_state);
             break;
         case 7:
-            R7_SetDigitalOutput(io_state);
+            R7_LAT = (io_state);
             break;
         default:
             break;
