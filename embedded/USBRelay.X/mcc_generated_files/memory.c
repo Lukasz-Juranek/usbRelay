@@ -55,7 +55,7 @@
   Section: Flash Module APIs
 */
 
-uint16_t FLASH_ReadWord(uint16_t flashAddr)
+uint8_t FLASH_ReadByte(uint16_t flashAddr)
 {
     uint8_t GIEBitValue = INTCONbits.GIE;   // Save interrupt enable
 
@@ -69,29 +69,10 @@ uint16_t FLASH_ReadWord(uint16_t flashAddr)
     NOP();
     INTCONbits.GIE = GIEBitValue;	// Restore interrupt enable
 
-    return ((uint16_t)((PMDATH << 8) | PMDATL));
+    return PMDATL;
 }
 
-void FLASH_WriteWord(uint16_t flashAddr, uint16_t *ramBuf, uint16_t word)
-{
-    uint16_t blockStartAddr = (uint16_t)(flashAddr & ((END_FLASH-1) ^ (ERASE_FLASH_BLOCKSIZE-1)));
-    uint8_t offset = (uint8_t)(flashAddr & (ERASE_FLASH_BLOCKSIZE-1));
-    uint8_t i;
-
-    // Entire row will be erased, read and save the existing data
-    for (i=0; i<ERASE_FLASH_BLOCKSIZE; i++)
-    {
-        ramBuf[i] = FLASH_ReadWord((blockStartAddr+i));
-    }
-
-    // Write at offset
-    ramBuf[offset] = word;
-
-    // Writes ramBuf to current block
-    FLASH_WriteBlock(blockStartAddr, ramBuf);
-}
-
-int8_t FLASH_WriteBlock(uint16_t writeAddr, uint16_t *flashWordArray)
+int8_t FLASH_WriteBlock(uint16_t writeAddr, uint8_t *flashWordArray)
 {
     uint16_t    blockStartAddr  = (uint16_t )(writeAddr & ((END_FLASH-1) ^ (ERASE_FLASH_BLOCKSIZE-1)));
     uint8_t     GIEBitValue = INTCONbits.GIE;   // Save interrupt enable
@@ -122,7 +103,7 @@ int8_t FLASH_WriteBlock(uint16_t writeAddr, uint16_t *flashWordArray)
 
 	// Load data in current address
         PMDATL = flashWordArray[i];
-        PMDATH = ((flashWordArray[i] & 0xFF00) >> 8);
+        //PMDATH = ((flashWordArray[i] & 0xFF00) >> 8);
 
         if(i == (WRITE_FLASH_BLOCKSIZE-1))
         {

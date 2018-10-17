@@ -96,36 +96,7 @@
     readWord = FLASH_ReadWord(flashAddr);
     </code>
 */
-uint16_t FLASH_ReadWord(uint16_t flashAddr);
-
-/**
-  @Summary
-    Writes a word into Flash
-
-  @Description
-    This routine writes the given word into mentioned Flash address
-
-  @Preconditions
-    None
-
-  @Param
-    flashAddr - Flash program memory location to which data has to be written
-    *ramBuf   - Pointer to an array of size 'ERASE_FLASH_BLOCKSIZE' at least
-    word      - Word to be written in Flash
-
-  @Returns
-    None
-
-  @Example
-    <code>
-    uint16_t    writeData = 0x55AA;
-    uint16_t    flashAddr = 0x01C0;
-    uint16_t    Buf[ERASE_FLASH_BLOCKSIZE];
-
-    FLASH_WriteWord(flashAddr, Buf, writeData);
-    </code>
-*/
-void FLASH_WriteWord(uint16_t flashAddr, uint16_t *ramBuf, uint16_t word);
+uint8_t FLASH_ReadByte(uint16_t flashAddr);
 
 /**
   @Summary
@@ -161,7 +132,7 @@ void FLASH_WriteWord(uint16_t flashAddr, uint16_t *ramBuf, uint16_t word);
     FLASH_WriteBlock((uint16_t)FLASH_ROW_ADDRESS, (uint16_t*)wrBlockData);
     </code>
 */
-int8_t FLASH_WriteBlock(uint16_t writeAddr, uint16_t *flashWordArray);
+int8_t FLASH_WriteBlock(uint16_t writeAddr, uint8_t *flashWordArray);
 
 /**
   @Summary

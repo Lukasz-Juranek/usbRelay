@@ -46,6 +46,9 @@
 #include "nvm.h"
 
 #define BUFFER_SIZE 64
+
+#define USB_COMMAND(x) (strcmp(buffer, x)) 
+
 uint8_t buffer[BUFFER_SIZE];
 
 uint8_t bufferPos;
@@ -58,14 +61,15 @@ void FlushString(uint8_t *data);
 void main(void) {
     // initialize the device
     SYSTEM_Initialize();
-  
+     
     t_relay* relays = RelayApp_Start();
-    /*INTERRUPT_GlobalInterruptEnable();
+      
+    INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
   
     TMR1_SetInterruptHandler(RelayApp_ISR);
     bufferPos = 0;
-    TMR1_StartTimer();*/
+    TMR1_StartTimer();
 
     nvm_read_conf(relays);
     nvm_save_conf(relays);
@@ -86,10 +90,23 @@ void main(void) {
             CDCTxService();            
             //Run application code.
             if (LineReception(buffer, BUFFER_SIZE)) {
-                if (strcmp(buffer, "SaveConf") == 0) {
+                if (USB_COMMAND("SC") == 0) {
                     nvm_save_conf(relays);
                     FlushString("OK\n");
                 }
+                
+                if (USB_COMMAND("ON") == 0)
+                {
+                    TMR1_StartTimer();
+                    FlushString("OK\n");
+                }
+                
+                if (USB_COMMAND("OFF") == 0)
+                {
+                    TMR1_StopTimer();
+                    FlushString("OK\n");
+                }
+                
                 switch (RelayApp_ParseWhole(buffer, relays)) {
                     case USB_RELAY_OK:
                         FlushString("OK\n");
