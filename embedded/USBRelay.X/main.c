@@ -56,28 +56,21 @@ uint8_t bufferPos;
 uint8_t LineReception(uint8_t *buffer, uint8_t maxSize);
 void FlushString(uint8_t *data);
 
-
+t_relay* relays;
 
 void main(void) {
     // initialize the device
     SYSTEM_Initialize();
      
-    t_relay* relays = RelayApp_Start();
-      
-    INTERRUPT_GlobalInterruptEnable();
-    INTERRUPT_PeripheralInterruptEnable();
-  
     TMR1_SetInterruptHandler(RelayApp_ISR);
     bufferPos = 0;
-    TMR1_StartTimer();
-
-    nvm_read_conf(relays);
-    nvm_save_conf(relays);
+    
+    relays = RelayApp_Start();  
     nvm_read_conf(relays);
     
-    while (1){
-        
-    }
+    TMR1_StartTimer();
+    INTERRUPT_GlobalInterruptEnable();
+    INTERRUPT_PeripheralInterruptEnable();
     
     while (1) {
         USBDeviceTasks();
@@ -90,21 +83,28 @@ void main(void) {
             CDCTxService();            
             //Run application code.
             if (LineReception(buffer, BUFFER_SIZE)) {
-                if (USB_COMMAND("SC") == 0) {
+                
+                if (USB_COMMAND("SC") == 0) {                    
+                  
                     nvm_save_conf(relays);
+                    
                     FlushString("OK\n");
+                   
+                    continue;
                 }
                 
                 if (USB_COMMAND("ON") == 0)
                 {
                     TMR1_StartTimer();
                     FlushString("OK\n");
+                    continue;
                 }
                 
                 if (USB_COMMAND("OFF") == 0)
                 {
                     TMR1_StopTimer();
                     FlushString("OK\n");
+                    continue;
                 }
                 
                 switch (RelayApp_ParseWhole(buffer, relays)) {
@@ -133,6 +133,7 @@ void FlushString(uint8_t *data) {
     putUSBUSART(data, strlen(data));
     CDCTxService();
 }
+
 //R2D123C456,S1P123,S0P333
 uint8_t LineReception(uint8_t *buffer, uint8_t maxSize) {
     uint8_t rxByte;

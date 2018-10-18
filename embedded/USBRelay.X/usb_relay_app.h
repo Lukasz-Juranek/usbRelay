@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-    
-#define USB_RELAY_MAX_RELAY_NO 2    
+
+#define USB_RELAY_MAX_RELAY_NO 8    
 #define USB_RELAY_MAX_STEPS_COUNT 5
     
 #define USB_RELAY_OK 1
