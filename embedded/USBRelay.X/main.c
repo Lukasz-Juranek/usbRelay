@@ -56,7 +56,7 @@ uint8_t bufferPos;
 uint8_t LineReception(uint8_t *buffer, uint8_t maxSize);
 void FlushString(uint8_t *data);
 
-t_relay* relays;
+t_relay* p_relays;
 
 void main(void) {
     // initialize the device
@@ -65,8 +65,8 @@ void main(void) {
     TMR1_SetInterruptHandler(RelayApp_ISR);
     bufferPos = 0;
     
-    relays = RelayApp_Start();  
-    nvm_read_conf(relays);
+    p_relays = RelayApp_Start();  
+    nvm_read_conf();
     
     TMR1_StartTimer();
     INTERRUPT_GlobalInterruptEnable();
@@ -86,7 +86,7 @@ void main(void) {
                 
                 if (USB_COMMAND("SC") == 0) {                    
                   
-                    nvm_save_conf(relays);
+                    nvm_save_conf(p_relays);
                     
                     FlushString("OK\n");
                    
@@ -107,7 +107,7 @@ void main(void) {
                     continue;
                 }
                 
-                switch (RelayApp_ParseWhole(buffer, relays)) {
+                switch (RelayApp_ParseWhole(buffer, p_relays)) {
                     case USB_RELAY_OK:
                         FlushString("OK\n");
                         break;

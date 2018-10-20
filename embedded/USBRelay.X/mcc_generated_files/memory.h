@@ -132,7 +132,7 @@ uint8_t FLASH_ReadByte(uint16_t flashAddr);
     FLASH_WriteBlock((uint16_t)FLASH_ROW_ADDRESS, (uint16_t*)wrBlockData);
     </code>
 */
-int8_t FLASH_WriteBlock(uint16_t writeAddr, uint8_t *flashWordArray);
+int8_t FLASH_WriteBlock(uint16_t writeAddr,uint8_t *flashWordArray);
 
 /**
   @Summary

@@ -72,12 +72,12 @@ uint8_t FLASH_ReadByte(uint16_t flashAddr)
     return PMDATL;
 }
 
-int8_t FLASH_WriteBlock(uint16_t writeAddr, uint8_t *flashWordArray)
+int8_t FLASH_WriteBlock(uint16_t writeAddr,uint8_t *flashWordArray)
 {
     uint16_t    blockStartAddr  = (uint16_t )(writeAddr & ((END_FLASH-1) ^ (ERASE_FLASH_BLOCKSIZE-1)));
     uint8_t     GIEBitValue = INTCONbits.GIE;   // Save interrupt enable
     uint8_t i;
-
+    
     // Flash write must start at the beginning of a row
     if( writeAddr != blockStartAddr )
     {

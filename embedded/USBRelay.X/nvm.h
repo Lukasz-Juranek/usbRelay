@@ -15,8 +15,8 @@ extern "C" {
 #include "mcc_generated_files/mcc.h"
 #include "usb_relay_app.h"
     
-uint8_t nvm_read_conf(t_relay* relays_config);
-void nvm_save_conf(t_relay* relays_config);
+uint8_t nvm_read_conf();
+void nvm_save_conf();
     
 typedef struct {
     uint16_t valid_conf;
