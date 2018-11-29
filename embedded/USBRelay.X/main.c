@@ -58,14 +58,29 @@ void FlushString(uint8_t *data);
 
 t_relay* p_relays;
 
+void init_relay_app()
+{
+    R0_LAT = 1;
+    R1_LAT = 1;
+    R2_LAT = 1;
+    R3_LAT = 1;
+    R4_LAT = 1;
+    R5_LAT = 1;
+    R6_LAT = 1;
+    R7_LAT = 1;
+    p_relays = RelayApp_Start(); 
+    
+}
+
 void main(void) {
     // initialize the device
     SYSTEM_Initialize();
-     
+    
+    init_relay_app();
     TMR1_SetInterruptHandler(RelayApp_ISR);
     bufferPos = 0;
     
-    p_relays = RelayApp_Start();  
+    
     nvm_read_conf();
     
     TMR1_StartTimer();
@@ -90,6 +105,13 @@ void main(void) {
                     
                     FlushString("OK\n");
                    
+                    continue;
+                }
+                
+                if (USB_COMMAND("CLR") == 0)
+                {
+                    init_relay_app();
+                    FlushString("OK\n");
                     continue;
                 }
                 
@@ -168,28 +190,28 @@ uint8_t LineReception(uint8_t *buffer, uint8_t maxSize) {
 void RelayApp_UpdateIO(uint8_t relay_number, uint8_t io_state) {
     switch (relay_number) {
         case 0:
-            R0_LAT = (io_state);
+            R7_LAT = (io_state);
             break;
         case 1:
-            R1_LAT = (io_state);
-            break;
-        case 2:
-            R2_LAT = (io_state);
-            break;
-        case 3:
-            R3_LAT = (io_state);
-            break;
-        case 4:
-            R4_LAT = (io_state);
-            break;
-        case 5:
-            R5_LAT = (io_state);
-            break;
-        case 6:
             R6_LAT = (io_state);
             break;
+        case 2:
+            R5_LAT = (io_state);
+            break;
+        case 3:
+            R4_LAT = (io_state);
+            break;
+        case 4:
+            R3_LAT = (io_state);
+            break;
+        case 5:
+            R2_LAT = (io_state);
+            break;
+        case 6:
+            R1_LAT = (io_state);
+            break;
         case 7:
-            R7_LAT = (io_state);
+            R0_LAT = (io_state);
             break;
         default:
             break;

@@ -203,7 +203,7 @@ void RelayApp_SetRelayState(t_relay* active_relay) {
 t_relay relays[USB_RELAY_MAX_RELAY_NO];
 
 t_relay* RelayApp_Start(void)
-{
+{    
 	memset(relays,0,sizeof(t_relay)*USB_RELAY_MAX_RELAY_NO);
 	return relays;
 }
@@ -212,12 +212,12 @@ void RelayApp_ProcessStep(t_relay* relay) {
 
 	if (relay->cycle_count > 0) {
 		/* 0. Process delay */
-		if (relay->delay_ms > 0) {
-			relay->delay_ms--;
+		if (relay->delay_ms >= USB_RELAY_ISR_PERIOD_MS) {
+			relay->delay_ms -= USB_RELAY_ISR_PERIOD_MS;
 		} else {
 			/* 1. Process step period */
-			if (relay->active_step_data.period_ms > 0) {
-				relay->active_step_data.period_ms--;
+			if (relay->active_step_data.period_ms >= USB_RELAY_ISR_PERIOD_MS) {
+				relay->active_step_data.period_ms -= USB_RELAY_ISR_PERIOD_MS ;
 			} else {
 				RelayApp_SetRelayState(relay);
 				if (RelayApp_ActivateStep(relay,relay->active_step_number + 1) == USB_RELAY_MAX_STEPS_ERR)

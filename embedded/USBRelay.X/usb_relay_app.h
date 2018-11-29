@@ -12,6 +12,7 @@
 extern "C" {
 #endif
 
+#define USB_RELAY_ISR_PERIOD_MS 100
 
 #define USB_RELAY_MAX_RELAY_NO 8    
 #define USB_RELAY_MAX_STEPS_COUNT 5
