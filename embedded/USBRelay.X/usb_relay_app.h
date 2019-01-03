@@ -20,6 +20,8 @@ extern "C" {
 #define USB_RELAY_OK 1
 #define USB_RELAY_ERR 0
 #define USB_RELAY_MAX_STEPS_ERR 2
+    
+#define USB_RELAY_MAX_CYCLE_COUNT UINT16_MAX
 
 typedef struct {
     uint8_t  active_status;
@@ -29,10 +31,10 @@ typedef struct {
 typedef struct {
 	uint8_t relay_number;
 
-	uint32_t cfg_cycle_count;
+	uint16_t cfg_cycle_count;
     uint32_t cfg_delay_ms;
 
-    uint32_t cycle_count;
+    uint16_t cycle_count;
     uint32_t delay_ms;
 
     t_step_conf active_step_data;

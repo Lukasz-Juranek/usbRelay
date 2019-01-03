@@ -68,11 +68,11 @@ void TMR1_Initialize(void)
     //T1GSS T1G_pin; TMR1GE disabled; T1GTM disabled; T1GPOL low; T1GGO_nDONE done; T1GSPM disabled; 
     T1GCON = 0x00;
 
-    //TMR1H 21; 
-    TMR1H = 0x15;
+    //TMR1H 232; 
+    TMR1H = 0xE8;
 
-    //TMR1L 160; 
-    TMR1L = 0xA0;
+    //TMR1L 144; 
+    TMR1L = 0x90;
 
     // Load the TMR value to reload variable
     timer1ReloadVal=(uint16_t)((TMR1H << 8) | TMR1L);
@@ -154,6 +154,7 @@ uint8_t TMR1_CheckGateValueStatus(void)
     return (T1GCONbits.T1GVAL);
 }
 
+extern void RelayApp_ISR();
 void TMR1_ISR(void)
 {
 
@@ -163,7 +164,8 @@ void TMR1_ISR(void)
 
     // ticker function call;
     // ticker is 1 -> Callback function gets called everytime this ISR executes
-    TMR1_CallBack();
+    RelayApp_ISR();
+    // TMR1_CallBack();
 }
 
 void TMR1_CallBack(void)

@@ -84,8 +84,8 @@ uint8_t RelayApp_ParseRelayData(char* i_data, t_relay* realy_data) {
 	const char relay_params[] = "RDC";
 	char* param_pointer;
 
-	realy_data->cycle_count = UINT32_MAX;
-	realy_data->cfg_cycle_count = UINT32_MAX;
+	realy_data->cycle_count = USB_RELAY_MAX_CYCLE_COUNT;
+	realy_data->cfg_cycle_count = USB_RELAY_MAX_CYCLE_COUNT;
 
 	realy_data->delay_ms = 0;
 	realy_data->cfg_delay_ms = 0;
@@ -196,9 +196,9 @@ uint8_t RelayApp_ActivateStep(t_relay* relay, uint8_t stepNo) {
 //	return RelayApp_ActivateStep(relay, (relay->active_step_number + 1) % relay->all_steps_count);
 //}
 
-void RelayApp_SetRelayState(t_relay* active_relay) {
-	RelayApp_UpdateIO(active_relay->relay_number, active_relay->active_step_data.active_status);
-}
+//void RelayApp_SetRelayState(t_relay* active_relay) {
+//	RelayApp_UpdateIO(active_relay->relay_number, active_relay->active_step_data.active_status);
+//}
 
 t_relay relays[USB_RELAY_MAX_RELAY_NO];
 
@@ -209,7 +209,7 @@ t_relay* RelayApp_Start(void)
 }
 
 void RelayApp_ProcessStep(t_relay* relay) {
-
+    
 	if (relay->cycle_count > 0) {
 		/* 0. Process delay */
 		if (relay->delay_ms >= USB_RELAY_ISR_PERIOD_MS) {
@@ -219,12 +219,12 @@ void RelayApp_ProcessStep(t_relay* relay) {
 			if (relay->active_step_data.period_ms >= USB_RELAY_ISR_PERIOD_MS) {
 				relay->active_step_data.period_ms -= USB_RELAY_ISR_PERIOD_MS ;
 			} else {
-				RelayApp_SetRelayState(relay);
+                RelayApp_UpdateIO(relay->relay_number, relay->active_step_data.active_status);
 				if (RelayApp_ActivateStep(relay,relay->active_step_number + 1) == USB_RELAY_MAX_STEPS_ERR)
 				{
 					RelayApp_ActivateStep(relay, 0);
 					/* 2. Process operation count*/
-					if (relay->cycle_count != UINT32_MAX) {
+					if (relay->cycle_count != USB_RELAY_MAX_CYCLE_COUNT) {
 						relay->cycle_count--;
 					} else {
 						/* do not decrement */
@@ -234,6 +234,7 @@ void RelayApp_ProcessStep(t_relay* relay) {
 		}
 	}
 }
+
 
 /* function called in timer */
 void RelayApp_ISR() {

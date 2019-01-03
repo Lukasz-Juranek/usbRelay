@@ -74,6 +74,7 @@ void init_relay_app()
 
 void main(void) {
     // initialize the device
+    
     SYSTEM_Initialize();
     
     init_relay_app();
@@ -82,6 +83,7 @@ void main(void) {
     
     
     nvm_read_conf();
+    
     
     TMR1_StartTimer();
     INTERRUPT_GlobalInterruptEnable();
